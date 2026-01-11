@@ -1,24 +1,26 @@
-/*
+/**
  * UT04 Práctica 2: VideoSystem (Singleton)
- * Descripción: Gestor principal del sistema.
+ * Autor: Tu Nombre
+ * Descripción: Gestor principal del sistema de vídeo. Implementa patrón Singleton y fachada.
  */
 
 const VideoSystem = (function () {
     let instantiated;
 
     function init(name) {
-        // Propiedades Privadas del Sistema
+        // --- Propiedades Privadas del Sistema ---
         let _name = name;
         let _users = [];
         
         // Estructuras para guardar relaciones.
-        // Usamos arrays de objetos para guardar { category: obj, productions: [] }
+        // Usamos arrays de objetos: { category: Category, productions: [Production] }
         let _categories = []; 
-        let _productions = []; // Array simple de producciones para búsqueda rápida
+        let _productions = []; 
         let _directors = [];
         let _actors = [];
 
         // --- MÉTODOS PRIVADOS AUXILIARES ---
+        // Ayudan a encontrar la posición de un objeto en los arrays internos
         function getCategoryPos(category) {
             return _categories.findIndex(c => c.category.name === category.name);
         }
@@ -33,11 +35,17 @@ const VideoSystem = (function () {
         }
 
         return {
-            // Getter del nombre
+            // --- GETTERS Y SETTERS ---
             get name() { return _name; },
             set name(val) { _name = val; },
 
             // --- GESTIÓN DE CATEGORÍAS ---
+            
+            /**
+             * Añade una nueva categoría al sistema.
+             * @param {Category} category 
+             * @returns {number} Número total de categorías.
+             */
             addCategory: function (category) {
                 if (!(category instanceof Category)) throw new InvalidValueException("category", category);
                 if (getCategoryPos(category) !== -1) throw new ElementExistsException(category.name);
@@ -46,6 +54,11 @@ const VideoSystem = (function () {
                 return _categories.length;
             },
 
+            /**
+             * Elimina una categoría del sistema.
+             * @param {Category} category 
+             * @returns {number} Número total de categorías restantes.
+             */
             removeCategory: function (category) {
                 let index = getCategoryPos(category);
                 if (index === -1) throw new ResourceNotFoundException(category.name);
@@ -53,8 +66,10 @@ const VideoSystem = (function () {
                 return _categories.length;
             },
 
+            /**
+             * Devuelve un iterador con todas las categorías.
+             */
             get categories() {
-                // Iterador Generador
                 let nextIndex = 0;
                 return {
                     next: function () {
@@ -66,6 +81,12 @@ const VideoSystem = (function () {
             },
 
             // --- GESTIÓN DE USUARIOS ---
+
+            /**
+             * Añade un usuario al sistema.
+             * @param {User} user 
+             * @returns {number} Total de usuarios.
+             */
             addUser: function (user) {
                 if (!(user instanceof User)) throw new InvalidValueException("user", user);
                 if (_users.find(u => u.username === user.username || u.email === user.email)) {
@@ -94,6 +115,11 @@ const VideoSystem = (function () {
             },
 
             // --- GESTIÓN DE PRODUCCIONES ---
+
+            /**
+             * Añade una producción (Película o Serie).
+             * @param {Production} production 
+             */
             addProduction: function (production) {
                 if (!(production instanceof Production)) throw new InvalidValueException("production", production);
                 if (getProductionPos(production) !== -1) throw new ElementExistsException(production.title);
@@ -108,7 +134,7 @@ const VideoSystem = (function () {
                 // Borrar producción de la lista general
                 _productions.splice(index, 1);
 
-                // Borrar producción de las categorías, directores y actores
+                // Borrar producción de las categorías, directores y actores (Integridad referencial)
                 [_categories, _directors, _actors].forEach(collection => {
                     collection.forEach(item => {
                         let pIndex = item.productions.indexOf(production);
@@ -129,7 +155,20 @@ const VideoSystem = (function () {
                 };
             },
 
+            // --- NUEVO: BÚSQUEDA DE PRODUCCIÓN POR TÍTULO ---
+            /**
+             * Busca una producción por su título.
+             * @param {string} title 
+             * @returns {Production} La producción encontrada.
+             */
+            getProduction: function(title) {
+                let production = _productions.find(p => p.title === title);
+                if (!production) throw new ResourceNotFoundException(title);
+                return production;
+            },
+
             // --- GESTIÓN DE ACTORES Y DIRECTORES ---
+
             addActor: function (actor) {
                 if (!(actor instanceof Person)) throw new InvalidValueException("actor", actor);
                 if (getActorPos(actor) !== -1) throw new ElementExistsException(actor.name);
@@ -177,10 +216,17 @@ const VideoSystem = (function () {
             },
 
             // --- ASIGNACIONES (Category, Director, Actor) ---
+            // Implementan patrón Flyweight: Si la categoría/director/actor no existe, se crea.
+
+            /**
+             * Asigna una categoría a una producción.
+             * @param {Category} category 
+             * @param {Production} production 
+             */
             assignCategory: function (category, production) {
                 if (getProductionPos(production) === -1) this.addProduction(production);
                 let catIndex = getCategoryPos(category);
-                if (catIndex === -1) { // Flyweight implícito: si no existe se añade
+                if (catIndex === -1) { 
                     this.addCategory(category);
                     catIndex = getCategoryPos(category);
                 }
@@ -191,6 +237,7 @@ const VideoSystem = (function () {
                 }
                 return catObj.productions.length;
             },
+
             deassignCategory: function (category, production) {
                 let catIndex = getCategoryPos(category);
                 if (catIndex === -1) throw new ResourceNotFoundException(category.name);
@@ -241,9 +288,13 @@ const VideoSystem = (function () {
                 return _actors[actIndex].productions.length;
             },
 
-            // --- BÚSQUEDAS (Getters con Iteradores) ---
+            // --- BÚSQUEDAS (ITERADORES) ---
+
+            /**
+             * Devuelve iterador de actores de una producción (El Cast).
+             * @param {Production} production 
+             */
             getCast: function (production) {
-                // Buscar actores que tengan esta producción
                 let cast = _actors.filter(a => a.productions.includes(production)).map(a => a.actor);
                 let nextIndex = 0;
                 return {

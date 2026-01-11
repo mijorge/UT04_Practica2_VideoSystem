@@ -27,7 +27,7 @@ function testVideoSystem() {
         console.log("--- Añadiendo Categorías, Usuarios y Producciones ---");
         console.log("Cats: " + vs.addCategory(catAccion));
         console.log("Users: " + vs.addUser(user1));
-        console.log("Prods: " + vs.addProduction(mov1)); // Añadir producción suelta
+        console.log("Prods: " + vs.addProduction(mov1)); 
 
         console.log("--- Añadiendo Actores y Directores ---");
         console.log("Directors: " + vs.addDirector(p1));
@@ -35,18 +35,19 @@ function testVideoSystem() {
 
         // 4. Asignaciones (Aquí es donde la magia ocurre)
         console.log("--- Asignando Relaciones ---");
-        // Asignar Pulp Fiction a Acción
         vs.assignCategory(catAccion, mov1);
-        // Asignar Tarantino como director de Pulp Fiction
         vs.assignDirector(p1, mov1);
-        // Asignar Brad Pitt a Pulp Fiction
         vs.assignActor(p2, mov1);
-        // Asignar Uma Thurman (No estaba añadida, el sistema debería añadirla sola)
         vs.assignActor(p3, mov1); 
 
-        // 5. Comprobación de Iteradores (Búsquedas)
-        console.log("--- BÚSQUEDAS (Iteradores) ---");
+        // 5. Comprobación de Iteradores y Búsquedas
+        console.log("--- BÚSQUEDAS Y GETTERS ---");
         
+        // Probamos el nuevo método getProduction
+        console.log("Buscando 'Pulp Fiction' por título...");
+        let pFound = vs.getProduction("Pulp Fiction");
+        console.log("Encontrada: " + pFound.toString());
+
         console.log("Producciones de Acción:");
         let itProd = vs.getProductionsCategory(catAccion);
         let prod = itProd.next();
@@ -63,14 +64,6 @@ function testVideoSystem() {
             actor = itCast.next();
         }
 
-        console.log("Producciones de Tarantino:");
-        let itDir = vs.getProductionsDirector(p1);
-        let dProd = itDir.next();
-        while (!dProd.done) {
-            console.log(" -> " + dProd.value.toString());
-            dProd = itDir.next();
-        }
-
         // 6. Prueba de Errores
         console.log("--- Prueba de Errores ---");
         try {
@@ -80,9 +73,9 @@ function testVideoSystem() {
         }
 
         try {
-            let pFail = new Production("Titulo", "Nacion", new Date(), "Syn", "Img"); // Clase abstracta
+            vs.getProduction("Titanic"); // No existe
         } catch (e) {
-            console.error("Error capturado (Abstracta): " + e.message);
+            console.error("Error de no encontrado capturado: " + e.message);
         }
 
     } catch (e) {
